@@ -133,8 +133,12 @@ def train():
             action = agent.select_action(state)
             next_state, reward, done = env.step(action)
             agent.memory.push(state, action, reward, next_state, done)
+            # done_count = sum(1 for t in agent.memory.buffer if t[4])
+            # print(f"done_count:{done_count}, totoal={len(agent.memory)}, rate={done_count/len(agent.memory) :.2f}")
             agent.train_step()
             state = next_state
+        done_count = sum(1 for t in agent.memory.buffer if t[4])
+        print(f"done_count:{done_count}, totoal={len(agent.memory)}, rate={done_count/len(agent.memory) :.2f}")
         pbar.update(1)
         pbar.set_description(f"episode:{i+1}/{n_episode}")
         if i%100==0:
