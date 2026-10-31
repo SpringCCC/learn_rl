@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from matplotlib.patches import Patch
 import random
-from springc_utils import toNumpy
+from springc_utils import toNumpy, toTensor
 
 class Env:
     """
@@ -25,14 +25,14 @@ class Env:
     DOWN = 1
     LEFT = 2
     RIGHT = 3
-    KEEP = 4
+    # KEEP = 4
     
     ACTION = {
         UP:     np.asarray([-1, 0]),
         DOWN:   np.asarray([1, 0]),
         LEFT:   np.asarray([0, -1]),
         RIGHT:  np.asarray([0, 1]),
-        KEEP:   np.asarray([0, 0])
+        # KEEP:   np.asarray([0, 0])
     }
     
     
@@ -57,9 +57,14 @@ class Env:
         self.cur_pos = None
         
         self.obstacle_value = -10
-        self.dst_value = 0
+        self.dst_value = 10
         self.step_value = -1
-        self.cross_boundary_value = -10
+        n_grid = rows * cols
+        self.state_vector = np.zeros((n_grid, n_grid), dtype=np.float32)
+        self.n_step = 0
+        self.max_step = 50
+        for i in range(n_grid):
+            self.state_vector[i, i] = 1.0
         
         
 
@@ -119,6 +124,7 @@ class Env:
         #     if self.cur_pos != self.goal:
         #         break
         self.cur_pos = (0, 0)
+        self.n_step = 0
     
     
     def generate_obstacles(self):
@@ -140,28 +146,31 @@ class Env:
     
     
     def step(self, action):
+        self.n_step += 1
         cur_row, cur_col = self.cur_pos
         cur_pos = toNumpy(self.cur_pos)
         new_pos = cur_pos + self.ACTION[action]
         new_row, new_col = new_pos[0].item(), new_pos[1].item()
-        is_cross_boundary = False
         if new_row<0 or new_row>=self.rows:
             new_row = cur_row
-            is_cross_boundary = True
         if new_col<0 or new_col>=self.cols:
             new_col = cur_col
-            is_cross_boundary = True
         next_pos = (new_row, new_col)
         done = False
-        if is_cross_boundary:
-            r = self.cross_boundary_value
+        if next_pos == self.goal:
+            r = self.dst_value
+            done = True
+        elif next_pos in self.obstacles:
+            r = self.obstacle_value
         else:
-            if next_pos == self.goal:
-                r = self.dst_value
-                done = True
-            elif next_pos in self.obstacles:
-                r = self.obstacle_value
-            else:
-                r = self.step_value
+            r = self.step_value
         self.cur_pos = next_pos
-        return next_pos, r, done
+        if self.n_step > self.max_step:
+            done = True
+        next_state = self.pos2state(next_pos)
+        return next_state, r, done
+    
+    
+    def pos2state(self, pos):
+        index = pos[0] * self.cols + pos[1]
+        return self.state_vector[index]
