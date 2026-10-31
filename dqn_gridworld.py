@@ -52,15 +52,20 @@ class Agent(BaseAgent):
         self.train_step_count = 0
         self.syncnet_freq = 10
 
+    # def select_action(self, state):
+    #     if np.random.random() < self.epsilon:
+    #         return np.random.randint(self.n_actions)
+    #     self.main_net.eval()
+    #     state = toTensor(state)[None].to(self.device)
+    #     with torch.no_grad():
+    #         action = self.main_net(state).argmax(dim=-1).item()
+    #     self.main_net.train()
+    #     return action
+    
+    
     def select_action(self, state):
-        if np.random.random() < self.epsilon:
-            return np.random.randint(self.n_actions)
-        self.main_net.eval()
-        state = toTensor(state)[None].to(self.device)
-        with torch.no_grad():
-            action = self.main_net(state).argmax(dim=-1).item()
-        self.main_net.train()
-        return action
+        return np.random.randint(self.n_actions)
+
 
     def syncNet(self):
         self.target_net.load_state_dict(self.main_net.state_dict())
@@ -123,21 +128,29 @@ def train():
     ## 构建replay
     env.reset()
     pbar = tqdm()
+    n_train_step = 100000
     visit = np.zeros((rows, cols), dtype=np.int32)
     state_vector = toTensor(env.state_vector).float().to(device)
-    for i in range(n_episode):
-        env.reset()
+    for _ in range(10000):
         state = env.pos2state(env.cur_pos)
-        done = False
-        while not done:
-            action = agent.select_action(state)
-            next_state, reward, done = env.step(action)
-            agent.memory.push(state, action, reward, next_state, done)
-            agent.train_step()
-            state = next_state
+        action = agent.select_action(state)
+        next_state, reward, done = env.step(action)
+        agent.memory.push(state, action, reward, next_state, done)
+        state = next_state
+        
+    done_count = 0
+    for transition in agent.memory.buffer:
+        if transition[4]:
+            done_count += 1
+    print(f"{done_count=}")
+    
+        
+        
+    for i in range(n_train_step):
+        agent.train_step()
         pbar.update(1)
         pbar.set_description(f"episode:{i+1}/{n_episode}")
-        if i%100==0:
+        if i%1000==0:
             with torch.no_grad():
                 policy = agent.target_net(state_vector).argmax(dim=-1).reshape(-1, env.cols)
                 render.render_policy(policy)
