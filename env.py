@@ -60,9 +60,9 @@ class Env:
         self.dst_value = 10
         self.step_value = -1
         n_grid = rows * cols
-        self.state_vector = np.zeros((n_grid, n_grid), dtype=np.float32)
         self.n_step = 0
         self.max_step = 50
+        self.state_vector = np.zeros((n_grid, n_grid), dtype=np.float32)
         for i in range(n_grid):
             self.state_vector[i, i] = 1.0
         
@@ -165,8 +165,8 @@ class Env:
         else:
             r = self.step_value
         self.cur_pos = next_pos
-        # if self.n_step > self.max_step:
-        #     done = True
+        if self.n_step > self.max_step:
+            done = True
         next_state = self.pos2state(next_pos)
         return next_state, r, done
     

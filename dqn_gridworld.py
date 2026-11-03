@@ -87,7 +87,8 @@ class Agent(BaseAgent):
         q_pred = self.main_net(states).gather(1, actions)[:, 0]
         with torch.no_grad():
             max_next_q = self.target_net(next_states).max(dim=-1)[0]
-            q_target = rewards + (1-dones) * self.gamma * max_next_q
+            # q_target = rewards + (1-dones) * self.gamma * max_next_q
+            q_target = rewards + self.gamma * max_next_q
         loss = self.loss_fn(q_pred, q_target)
         self.optimizer.zero_grad()
         loss.backward()
@@ -136,7 +137,6 @@ def train():
         action = agent.select_action(state)
         next_state, reward, done = env.step(action)
         agent.memory.push(state, action, reward, next_state, done)
-        state = next_state
         
     done_count = 0
     for transition in agent.memory.buffer:
