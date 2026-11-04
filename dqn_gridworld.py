@@ -14,7 +14,8 @@ class SimpleNet(nn.Module):
 
     def __init__(self, input_dim=2, out_dim=5):
         super().__init__()
-        mid_dim = input_dim*10
+        # mid_dim = input_dim*10
+        mid_dim = 128
         self.fc1 = nn.Linear(input_dim, mid_dim)
         self.fc2 = nn.Linear(mid_dim, out_dim)
         self.act = nn.SiLU()
@@ -48,7 +49,7 @@ class Agent(BaseAgent):
         self.memory = ReplayBuffer(max_buffer_num, batch_size, device)
         self.batch_size = batch_size
         self.loss_fn = nn.MSELoss()
-        self.optimizer = optim.Adam(self.main_net.parameters(), lr=1e-3)
+        self.optimizer = optim.Adam(self.main_net.parameters(), lr=1e-2)
         self.train_step_count = 0
         self.syncnet_freq = 10
 
@@ -140,6 +141,7 @@ def train():
         if i%100==0:
             with torch.no_grad():
                 policy = agent.target_net(state_vector).argmax(dim=-1).reshape(-1, env.cols)
+                print("\n")
                 render.render_policy(policy)
     # render.render_value(visit)
     agent.syncNet()
