@@ -1,5 +1,6 @@
 from env import Env
-
+import numpy as np
+np.set_printoptions(formatter={'float_kind': lambda x: f'{x:.2f}'})
 class Render:
 
     def __init__(self, env:Env):
@@ -44,7 +45,7 @@ class Render:
         for r in range(rows):
             print("|", end="")
             for c in range(cols):
-                cell = value[r, c]
-                print(f"{cell}|", end="")
+                cell = value[r, c].round(2)
+                print(f"{cell:.2f}|", end="")
             print()
             print("+" + "---+" * cols)

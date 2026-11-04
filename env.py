@@ -165,8 +165,8 @@ class Env:
         else:
             r = self.step_value
         self.cur_pos = next_pos
-        if self.n_step > self.max_step:
-            done = True
+        # if self.n_step > self.max_step:
+        #     done = True
         next_state = self.pos2state(next_pos)
         return next_state, r, done
     
