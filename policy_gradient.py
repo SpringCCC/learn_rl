@@ -14,7 +14,9 @@ from torch.distributions import Categorical
 from torch.utils.tensorboard import SummaryWriter
 
 random.seed(111143)
+from datetime import datetime
 
+log_dir = f"runs/policy_gradient_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
 
 class PolicyNet(nn.Module):
 
@@ -29,7 +31,7 @@ class PolicyNet(nn.Module):
         x = self.fc1(x)
         x = self.act(x)
         x = self.fc2(x)
-        x = F.softmax(x)
+        x = F.softmax(x, dim=-1)
         return x
 
 
@@ -49,20 +51,16 @@ class Agent(BaseAgent):
 
     
     def select_action(self, state):
-        self.policy_net.eval()
-        with torch.no_grad():
-            prob = self.policy_net(state)
-            action = Categorical(prob).sample()
-        self.policy_net.train()
+        prob = self.policy_net(state)
+        action = Categorical(prob).sample()
         return action.item()
             
         
 
-    # def get_policy(self, state_vector):
-    #     states = [[r, c] for r in range(self.rows) for c in range(self.cols)]
-    #     states = toTensor(self.env.st).to(self.device).float()
-    #     policy = self.target_net(states).argmax(dim=-1).reshape(-1, self.cols)
-    #     return policy
+    def get_policy(self, states):
+        states = toTensor(states).to(self.device).float()
+        policy = self.policy_net(states).argmax(dim=-1).reshape(-1, self.cols)
+        return policy
     
     
     
@@ -93,12 +91,11 @@ def train():
     gamma = 0.95
     agent = Agent(rows, cols, n_actions, gamma, device)
     n_episode = 4000
-    env.reset()
-    writter = W
+    writter = SummaryWriter(log_dir=log_dir)
     state_vector = toTensor(env.state_vector).float().to(device)
     for i in tqdm(range(n_episode)):
+        env.reset()
         done = False
-        
         state = env.pos2state(env.cur_pos).reshape(1, -1)
         state = toTensor(state, device).float()
         trans = {'states':[], 'actions':[], 'rewards':[], 'next_states':[], 'dones':[]}
@@ -112,7 +109,17 @@ def train():
             trans['next_states'].append(next_state)
             trans['dones'].append(done)
             state = next_state
+        episode_steps = env.n_step
         episode_return = agent.train_one_episode(trans)
+        writter.add_scalar("Reward/episode_return", episode_return, i+1)
+        writter.add_scalar("Steps/episode_steps", episode_steps, i+1)
+        if i%100==0:
+            policy = agent.get_policy(state_vector)
+            render.render_policy(policy)
+    print(f"最终的策略：\n")
+    policy = agent.get_policy(state_vector)
+    render.render_policy(policy)
+        
             
 
 train()

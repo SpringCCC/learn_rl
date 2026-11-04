@@ -58,10 +58,10 @@ class Env:
         
         self.obstacle_value = -10
         self.dst_value = 10
-        self.step_value = -1
+        self.step_value = 0
         n_grid = rows * cols
         self.n_step = 0
-        self.max_step = 50
+        self.max_step = 100
         self.state_vector = np.zeros((n_grid, n_grid), dtype=np.float32)
         for i in range(n_grid):
             self.state_vector[i, i] = 1.0
@@ -120,9 +120,9 @@ class Env:
     def reset(self):
         """重新选择初始位置"""
         # while True:
-        #     self.cur_pos = (np.random.randint(self.rows), np.random.randint(self.cols))
-        #     if self.cur_pos != self.goal:
-        #         break
+            # self.cur_pos = (np.random.randint(self.rows), np.random.randint(self.cols))
+            # if self.cur_pos != self.goal:
+            #     break
         self.cur_pos = (0, 0)
         self.n_step = 0
     
